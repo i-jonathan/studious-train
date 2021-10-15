@@ -18,6 +18,9 @@ variable "subnet_cidr_block" {}
 variable "env_prefix" {}
 variable "jade" {}
 variable "instance_type" {}
+# variable "public_key_location" {}
+variable "watch3rr_key" {}
+
 resource "aws_vpc" "app-vpc" {
   cidr_block = var.vpc_cidr_block
   tags = {
@@ -105,6 +108,20 @@ output "aws_ami" {
   value = data.aws_ami.latest-aws-linux.id
 }
 
+output "ec2-public-ip" {
+    value = aws_instance.app-server.public_ip
+}
+
+resource "aws_key_pair" "watch3rr-jade" {
+    key_name = "watch3rr-key"
+    public_key = var.watch3rr_key
+}
+
+# resource "aws_key_pair" "jay-jade" {
+#     key_name = "jay-server-key"
+#     public_key = file(var.public_key_location)
+# }
+
 
 resource "aws_instance" "app-server" {
     ami = data.aws_ami.latest-aws-linux.id
@@ -114,7 +131,7 @@ resource "aws_instance" "app-server" {
     vpc_security_group_ids = [aws_security_group.app-sg.id]
     availability_zone = var.avail_zone
     associate_public_ip_address = true
-    key_name = "server-key-pair"
+    key_name = aws_key_pair.watch3rr-jade.key_name
 
     tags = {
       "Name" = "${var.env_prefix}-server"
