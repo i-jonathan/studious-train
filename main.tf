@@ -17,7 +17,7 @@ variable "vpc_cidr_block" {}
 variable "subnet_cidr_block" {}
 variable "env_prefix" {}
 variable "jade" {}
-
+variable "instance_type" {}
 resource "aws_vpc" "app-vpc" {
   cidr_block = var.vpc_cidr_block
   tags = {
@@ -90,3 +90,33 @@ resource "aws_security_group" "app-sg" {
   }
 }
 
+data "aws_ami" "latest-aws-linux" {
+  owners = ["amazon"]
+  most_recent = true
+  
+  filter {
+    name = "name"
+    values = ["amzn2-ami-hvm-*-x86_64-gp2"]
+  }
+
+}
+
+output "aws_ami" {
+  value = data.aws_ami.latest-aws-linux.id
+}
+
+
+resource "aws_instance" "app-server" {
+    ami = data.aws_ami.latest-aws-linux.id
+    instance_type = var.instance_type
+
+    subnet_id = aws_subnet.app-subnet-1.id
+    vpc_security_group_ids = [aws_security_group.app-sg.id]
+    availability_zone = var.avail_zone
+    associate_public_ip_address = true
+    key_name = "server-key-pair"
+
+    tags = {
+      "Name" = "${var.env_prefix}-server"
+    }
+}
